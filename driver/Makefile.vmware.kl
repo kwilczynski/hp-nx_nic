@@ -1,0 +1,123 @@
+# Copyright (C) 2003 - 2009 NetXen, Inc.
+# All rights reserved.
+# 
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+# MA 02111-1307, USA.
+# 
+# The full GNU General Public License is included in this distribution
+# in the file called LICENSE.
+# 
+# Contact Information:
+# licensing@netxen.com
+# NetXen, Inc.
+# 18922 Forge Drive
+# Cupertino, CA 95014
+#-------------------------------------------------------------------------------
+# Makefile
+#
+#    Provides a wrapper to compile drivers in DDK
+#
+#    This is a generic Makefile and no changes are required to compile 
+#    drivers
+#-------------------------------------------------------------------------------
+
+include /opt/vmware/ddk/includes/ddk.inc
+
+#-------------------------------------------------------------------------------
+# Targets
+#-------------------------------------------------------------------------------
+default: vib
+
+vib: 	clean
+	@$(MKDIR) -p $(CURRENT_DIR)/build/VIB
+	@$(MKDIR) -p $(CURRENT_DIR)/build/debug
+	@$(MKDIR) -p $(CURRENT_DIR)/build/release
+	@$(MKDIR) -p $(CURRENT_DIR)/build/sverify
+	@if [ -f $(XML) ]; then \
+		$(CP) $(XML) $(XMLPATH); \
+	fi;
+	@$(CP) $(SC) $(SCPATH)
+	cd $(SRC); $(SCONS) PRODUCT=$(PRODUCT) \
+           BUILDTYPE=$(BUILDTYPE) BUILD_NUMBER=$(BUILDNUMBER) \
+           $(MODULESIGNOPTS) \
+           $(TARGET) 2>&1 | $(TEE) $(CURRENT_DIR)/$(LOG)
+	   
+	@$(CP) $(SRC)/`$(DBGOBJ)` $(CURRENT_DIR)/build/debug/
+	@$(CP) $(SRC)/`$(RELOBJ)` $(CURRENT_DIR)/build/release/
+	@$(CP) $(SRC)/`$(VIBCMD)` $(CURRENT_DIR)/build/VIB/
+	@$(CP) $(SRC)/`$(SVOBJ)` $(CURRENT_DIR)/build/sverify/
+	@echo
+	@echo "$(MODULE) binaries available at $(CURRENT_DIR)/build/"
+	@echo
+	@echo "`$(VIB)` available at $(CURRENT_DIR)/build/VIB/"
+	@echo
+	@echo "Source Verification signatures available in $(CURRENT_DIR)/build/sverify"
+	@echo
+	@if [ "$(SIGNOPTS)" != "" ];                                             \
+	then                                                                     \
+	    echo "Signing Successful! Driver modules are now signed.";           \
+            echo;                                                                \
+	fi;
+
+
+driver-iso: vib
+	@if [ ! -f $(CURRENT_DIR)/bulletin.xml ]; 				\
+	then									\
+		echo; 								\
+		echo "bulletin.xml not available.\
+		To obtain a driver CD for your driver, please run script\
+		fill-template.pl and ensure the fields\
+		in bulletin.xml are appropriate before \
+		executing \"make driver-iso\"";					\
+		echo; 								\
+		exit 1;								\
+	fi;
+	@$(SED) -i "s#<vibID>.*</vibID>#<vibID/>#g" $(CURRENT_DIR)/bulletin.xml
+	@$(SED) -i "s#<vibID/>#<vibID>$(VIBID)</vibID>#g" $(CURRENT_DIR)/bulletin.xml
+	@$(MKDIR) -p $(STAGE2)
+	$(VIBPUBLISH) --group=metadata.zip -e --target=ESX,4.0.0 --target=ESXi,4.0.0 \
+	   --bulletin=$(CURRENT_DIR)/bulletin.xml --vib-stage=$(CURRENT_DIR)/build/VIB
+	@$(MV) $(CURRENT_DIR)/offline-bundle.zip $(STAGE2)/
+	@$(RM) $(CURRENT_DIR)/metadata.zip
+	$(VIBPUBLISH) --driver-iso=$(MODULE).iso --offline-bundle-dir=$(STAGE2)
+	@$(MV) $(MODULE).iso $(CURRENT_DIR)/build/ 
+	@echo
+	@echo "Driver CD $(MODULE).iso is available in directory $(CURRENT_DIR)/build/"
+	@echo
+
+
+clean: 
+	@$(RM) -rf $(CURRENT_DIR)/build
+	@$(RM) -rf $(XMLPATH)/$(XML)
+	@$(RM) -rf $(SCPATH)/$(SC)
+	@$(RM) -rf $(CURRENT_DIR)/$(LOG)
+	@cd $(SRC); $(SCONS) PRODUCT=$(PRODUCT) \
+           BUILDTYPE=$(BUILDTYPE) BUILD_NUMBER=$(BUILDNUMBER) clobber
+
+code-check: 
+	@if [ "$(TOCLEAN)" != "" ]; then \
+		$(RM) -rf $(DRIVER_SRC)/$(DRIVER_DIR)/$(CCHECK); \
+		$(MKDIR) -p $(DRIVER_SRC)/$(DRIVER_DIR)/$(CCHECK); \
+		$(MKDIR) -p $(XMLPATH); \
+		$(MKDIR) -p $(SCPATH); \
+		$(CP) $(XML) $(XMLPATH); \
+		$(CP) $(SC) $(SCPATH); \
+		cd $(SRC); $(SCONS) PRODUCT=$(PRODUCT) $(CCTARGET); \
+		cd $(SRC); for i in `ls $(DRIVER_SRC)/$(DRIVER_DIR)/$(CCHECK)/*.sh`; do . $$i 2>&1 | \
+		$(TEE) $(DRIVER_SRC)/$(DRIVER_DIR)/$(CCHECK)/results.txt ; done; \
+		echo "Results in $(DRIVER_SRC)/$(DRIVER_DIR)/$(CCHECK)/results.txt"; \
+	else \
+		echo "Driver source directory not found. Skipping code-check"; \
+	fi;

@@ -1,0 +1,128 @@
+# Copyright (C) 2003 - 2009 NetXen, Inc.
+# All rights reserved.
+# 
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+# MA 02111-1307, USA.
+# 
+# The full GNU General Public License is included in this distribution
+# in the file called LICENSE.
+# 
+# Contact Information:
+# licensing@netxen.com
+# NetXen, Inc.
+# 18922 Forge Drive
+# Cupertino, CA 95014
+UNM_ARCH ?= P3
+ifeq ($(UNM_ARCH),P3)
+P3_MODE ?= P3_NIC_CUT_THRU
+endif
+
+KERNEL_VERSION=$(shell uname -r | cut -c1-3)
+ifneq ($(strip $(vmwddk_dir)),)
+
+ifneq ($(strip $(vmwddk_tools)),)
+include Makefile.vmware.kl
+else
+include Makefile.vmware
+endif
+
+else
+ifeq ($(KERNEL_VERSION), 2.4)
+
+EXTRA_CFLAGS  += -D__KERNEL__ -DMODULE -I$(KERNEL_INC) -O -Wall
+EXTRA_CFLAGS  += -DEXPORT_SYMTAB
+EXTRA_CFLAGS  += -I. -I$(UNMSRC)/ -I../include
+INCLUDE  := -isystem /lib/modules/`uname -r`/build/include -D__KERNEL__
+CFLAGS += $(EXTRA_CFLAGS) -O2 -DMODULE -D__KERNEL__ ${WARN} ${INCLUDE}
+CC := gcc
+
+NX_XPORT_OBJS = nx_hw.o nx_pci_xport.o nx_xport_tool.o
+
+CSRCS	 = $(NX_XPORT_OBJS:%.o=%.c)
+
+NX_XPORT_MODULE = nx_xport.o
+
+MODULES=$(NX_XPORT_MODULE)
+
+.DEFAULT:	all
+
+all: nx_xport.o
+
+nx_xport.o : nx_hw.o  nx_pci_xport.o  nx_xport_tool.o
+	$(LD) -m elf_i386 -r -o nx_xport.o nx_hw.o  nx_pci_xport.o  nx_xport_tool.o
+
+nx_hw.o : nx_hw.c
+	${CC} ${CFLAGS} -c nx_hw.c
+
+nx_pci_xport.o : nx_pci_xport.c
+	${CC} ${CFLAGS} -c nx_pci_xport.c
+
+nx_xport_tool.o : nx_xport_tool.c
+	${CC} ${CFLAGS} -c nx_xport_tool.c
+
+libs: $(MODULES)
+
+bins:	libs $(MODULES)
+
+$(NX_XPORT_MODULE): $(NX_XPORT_OBJS)
+	$(LD) -r $(NX_XPORT_OBJS) -o $@
+
+clean:
+	rm -f $(NX_XPORT_OBJS) $(NX_XPORT_MODULE)
+
+clobber:	clean
+	$(RM) $(TARGET) $(SIMTARG) $(DIRT) .dependencies
+
+ifdef CONFIG_MODVERSIONS
+depend:		$(CSRCS) $(SIMSRCS) #export.ver
+else
+depend:		$(CSRCS) $(SIMSRCS)
+endif
+	@-$(RM) -f .dependencies
+	$(MAKEDEPEND) -f- -- $(CFLAGS) -- $(CSRCS) $(SIMSRCS) > .dependencies
+-include .dependencies
+
+else
+
+#EXTRA_CFLAGS = -I$(UNMSRC) -I$(UNMSRC)/include -Werror
+EXTRA_CFLAGS = -I$(UNMSRC) -I$(UNMSRC)/include 
+
+FEDORA                 ?=      $(shell uname -r |grep -o FC.)
+ifeq ($(strip $(FEDORA)),)
+EXTRA_CFLAGS += -DFEDORA=NOFC
+else
+EXTRA_CFLAGS += -DFEDORA=$(FEDORA)
+endif
+
+HOST_CPU=$(shell uname -m)
+ifeq ($(HOST_CPU),x86_64)
+EXTRA_CFLAGS += -DHOST_CPU_x86_64
+endif
+
+EXTRA_CFLAGS += -DHOST_CPU=$(HOST_CPU) -D$(UNM_ARCH) -DPEGNET_NIC
+ifeq ($(UNM_ARCH),P3)
+EXTRA_CFLAGS += -D$(P3_MODE)
+endif
+EXTRA_CFLAGS += -DUNM_CONF_PROCESSOR=UNM_CONF_X86
+EXTRA_CFLAGS += -DUNM_CONF_OS=UNM_CONF_LINUX -DUNM_HAL_NATIVE
+EXTRA_CFLAGS += -I$(UNMSRC)/include
+EXTRA_CFLAGS += -DUNM_X_HARDWARE=UNM_X_ASIC
+
+obj-m := nx_xport.o
+
+nx_xport-y := nx_hw.o nx_pci_xport.o nx_xport_tool.o
+
+endif
+endif

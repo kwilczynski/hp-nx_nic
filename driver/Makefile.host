@@ -1,0 +1,126 @@
+# Copyright (C) 2003 - 2009 NetXen, Inc.
+# All rights reserved.
+# 
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+# MA 02111-1307, USA.
+# 
+# The full GNU General Public License is included in this distribution
+# in the file called LICENSE.
+# 
+# Contact Information:
+# licensing@netxen.com
+# NetXen, Inc.
+# 18922 Forge Drive
+# Cupertino, CA 95014
+#
+# Makefile for the UNM  NIC Driver
+#
+
+UNM_ARCH ?= P3
+ifeq ($(UNM_ARCH),P3)
+P3_MODE ?= P3_LEGACY
+endif
+
+KERNEL_VERSION=$(shell uname -r | cut -c1-3)
+ifneq ($(strip $(vmwddk_dir)),)
+
+ifneq ($(strip $(vmwddk_tools)),)
+include Makefile.vmware.kl
+else
+include Makefile.vmware
+endif
+
+else
+ifeq ($(KERNEL_VERSION), 2.4)
+
+include Makefile.rules
+
+NIC_OBJS = unm_nic_hw.o unm_nic_main.o unm_nic_init.o unm_nic_ethtool.o xge_mdio.o niu.o nxhal.o nxhal_v34.o unm_nic_lro.o unm_nic_tool.o nx_hash_table.o nx_mem_pool.o nx_pexq.o
+
+CSRCS	 = $(NIC_OBJS:%.o=%.c)
+
+NIC_MODULE = unm_nic.o
+
+MODULES=$(NIC_MODULE)
+
+ifndef CONFIG_MODULES
+$(error Kernel must be configured for module support)
+endif
+
+.DEFAULT:	all
+
+all: depend libs bins
+
+libs: $(MODULES)
+
+bins:	libs $(MODULES)
+
+$(NIC_MODULE): $(NIC_OBJS)
+	$(LD) -r $(NIC_OBJS) -o $@
+
+export.ver: unm_nic_hw.c unm_nic_main.c
+	$(CC) $(CFLAGS) -E -D__GENKSYMS__ unm_nic_hw.c |\
+	$(GENKSYMS) -k $(GENKSYMS_KERNEL_VER) > $@
+	$(CC) $(CFLAGS) -E -D__GENKSYMS__ unm_nic_main.c |\
+	$(GENKSYMS) -k $(GENKSYMS_KERNEL_VER) >> $@
+
+clean:
+	rm -f $(NIC_OBJS) $(NIC_MODULE)
+
+clobber:	clean
+	$(RM) $(TARGET) $(SIMTARG) $(DIRT) .dependencies
+
+ifdef CONFIG_MODVERSIONS
+depend:		$(CSRCS) $(SIMSRCS) #export.ver
+else
+depend:		$(CSRCS) $(SIMSRCS)
+endif
+	@-$(RM) -f .dependencies
+	$(MAKEDEPEND) -f- -- $(CFLAGS) -- $(CSRCS) $(SIMSRCS) > .dependencies
+-include .dependencies
+
+else
+
+KERNEL_SOURCE	?=	/lib/modules/$(shell uname -r)/build
+
+EXTRA_CFLAGS = -I$(UNMSRC) -I$(UNMSRC)/include
+EXTRA_CFLAGS += -DUNM_CONF_PROCESSOR=UNM_CONF_X86
+
+HOST_CPU=$(shell uname -m)
+ifeq ($(HOST_CPU),x86_64)
+EXTRA_CFLAGS += -DHOST_CPU_x86_64
+endif
+
+EXTRA_CFLAGS += -DHOST_CPU=$(HOST_CPU) -D$(UNM_ARCH)
+ifeq ($(UNM_ARCH),P3)
+EXTRA_CFLAGS += -D$(P3_MODE)
+endif
+
+NIC_MODULE = unm_nic.o
+
+MODULES=$(NIC_MODULE)
+
+obj-m := unm_nic.o
+
+unm_nic-y := unm_nic_hw.o unm_nic_main.o unm_nic_init.o unm_nic_ethtool.o xge_mdio.o niu.o nxhal.o nxhal_v34.o unm_nic_lro.o unm_nic_tool.o nx_hash_table.o nx_mem_pool.o nx_pexq.o
+
+
+clean:
+	rm -f $(NIC_OBJS) $(NIC_MODULE)
+
+clobber:	clean
+	$(RM) $(TARGET) $(SIMTARG) $(DIRT) .dependencies
+endif
+endif

@@ -1,0 +1,208 @@
+.\" LICENSE
+.\" Copyright (C) 2003 - 2009 NetXen, Inc.
+.\" All rights reserved.
+.\"*
+.\"* This program is free software; you can redistribute it and/or
+.\"* modify it under the terms of the GNU General Public License
+.\"* as published by the Free Software Foundation; either version 2
+.\"* of the License, or (at your option) any later version.
+.\"*
+.\"* This program is distributed in the hope that it will be useful, but
+.\"* WITHOUT ANY WARRANTY; without even the implied warranty of
+.\"* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\"* GNU General Public License for more details.
+.\"*
+.\"* You should have received a copy of the GNU General Public License
+.\"* along with this program; if not, write to the Free Software
+.\"* Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+.\"* MA  02111-1307, USA.
+.\"*
+.\"* The full GNU General Public License is included in this distribution
+.\"* in the file called LICENSE.
+.\"*
+.\"* Contact Information:
+.\"*    info@netxen.com
+.\"* NetXen,
+.\"* 18922 Forge Dr.
+.\"* Cupertino, CA 95014
+.\"*/
+
+.TH NXUDIAG 4 "6 08 2007" "nxudiag" ""
+
+.SH NAME
+nxudiag \- NetXen's User Diagnostic Utility.
+
+.SH SYNOPSIS
+Usage: nxudiag [command-options-and-arguments]
+  where command is:
+
+-i, --interface <inf>              Set inf to work with [eth1, eth2, etc].
+                                   MUST be first in a chain
+
+-a, --all                          Perform all test, regardless of default
+
+-D, --default                      Perform Default tests only.
+
+-R, --CRegs                        Control Registers test (default)
+
+-F, --FLASH                        FLASH Test (default)
+
+-I, --IRQS                         Interrupt Test (default)
+
+-L, --IntLB                        Internal loop-back Test (default)
+
+-H, --Hw                           Hardware test (default)
+
+-S, --LinkSt                       Link Status Test (default)
+
+-l, --LED                          LED Test (default)
+
+-nR, --noCRegs                     No Control Registers Test(Combine -D or -a) 
+
+-nF, --noFLASH                     No FLASH Test(Combine -D or -a)
+
+-nI, --noIRQS                      No Interrupt Test(Combine -D or -a)
+
+-nL, --noIntLB                     No Loop-back Test(Combine -D or -a)
+
+-nH, --noHw                        No Hardware test(Combine -D or -a)
+
+-nS, --noLinkSt                    No Link Status Test(Combine -D or -a)
+
+-nl, --noLED                       No LED Test(Combine -D or -a)
+
+-E, --ExtLB                        External Full Duplex loop-back Test
+
+-h, --help                         Prints this help message
+
+Note: While running diagnostics tests, your network traffic will be interrupted.
+
+.SH DESCRIPTION
+This is a tool to for performing the user diagnostics over the NetXen's NIC.
+.br
+The user diagnostics utility performs the following tests.
+.br
+1 Control registers test
+.br
+2 Flash memory test
+.br
+3 Interrupt test
+.br
+4 Internal loop-back test
+.br
+5 External full duplex loop-back test
+.br
+6 Link Test
+.br
+7 LED Test
+.br
+8 Hardware Test
+.br
+9 All tests
+.br
+10 Board Info
+.br
+
+.SH OPERATIONAL DETAILS
+
+.SH Control registers test
+In this test the user diagnostic utility reads the values stored in the control
+registers. The setting of clearing of certain bits during the initialization
+process indicates whether the board has been configured correctly.
+The utility also performs a write/read back/compare operation to selected
+registers to verify each register’s accessibility.
+
+.SH Flash memory test
+In this test the user diagnostic utility reads the contents of the Flash
+memory, calculates the checksum, and compares the calculated checksum
+to the one stored in memory.
+
+.SH Interrupt test
+In this test the user diagnostic utility communicates with the driver to
+force the hardware to generated selected interrupts, then reads the interrupt
+status register to verify that the interrupt was generated and processed.
+
+.SH Internal loop-back test
+In this test the user diagnostic utility sets the Ethernet core (MAC) to
+perform a loopback operation. The utility sends packets to itself, then
+compares the contents of the packets to verify that the sent and received
+values are the same. No external hardware is required for the internal
+loopback test.
+
+.SH External full duplex loop-back test
+For CX4 applications, an external module is required to connect the four
+transmit lanes to the four corresponding receive lanes. This module must
+contain all of the associated handshake signals required to redirect the
+four transmit lanes to the four receive lanes. In this test the utility
+sends packets to itself through the optical transmit lane, reads the contents
+on the receive lane, then compares the contents of the packets to verify that
+the sent and received values are the same.For XFP applications, an 850 nm
+multimode cable with LC connectors is required to externally connect the
+transmit lane to the receive lane.
+
+.SH Link Test
+This test reports whether the link is up or down and also checked the carrier
+detect on the PHY.
+
+.SH LED Test
+This is an interactive test. The software/driver has no auto-detect mechanism
+for checking the LEDs.
+It is assumed the operator will have access to visually inspect the LEDs on the
+NIC.When the test is run, the LEDs will blink for several seconds. If no LEDs
+blink, the test has failed.
+
+.SH Hardware Test
+This tests various hardware blocks of NetXen's board including SRE, EPG, DMA engines, etc. 
+
+.SH All tests
+This option runs all of the above tests using a single command.
+
+.SH Board Info
+When no argument is passed to the utility it displays the board info.Board info
+includes information of the NetXen interface,with serial number,Chip Revision,
+Firmware version,Board Type,Clock info,DDR and QDR size,I-Cache and D-Cache info
+,mac address and Card Temperature.
+
+.br
+The \fBpre-requisites\fP for running this tool are:
+.br
+The NetXen Ethernet Card, revision C1, or later.
+
+Make sure that latest version of NetXen's NIC driver is installed on system.
+.br
+
+.SH OPTIONS
+
+.B To run all tests:
+.br
+		nxudiag -i ethX -a
+.br
+	or	nxudiag -i ethX --all
+
+.B To get board information:
+.br
+		nxudiag -i ethX
+
+.B To run default tests:
+.br
+		nxudiag -i ethX -D
+.br
+	or	nxudiag -i ethX --default
+
+.B To get help:
+.br
+		nxudiag -i ethX -h
+.br
+	or	nxudiag -i ethX --help
+
+
+.SH SUPPORT
+For additional information about NetXen NIC and its driver, firmware,
+documentation and related material see 
+.br
+.LP
+.RS
+.I http://www.netxen.com
+.RE
+.SH SEE ALSO
+nx_nic(4), nxlic(4), nx_lsa(4), nxflash(4)

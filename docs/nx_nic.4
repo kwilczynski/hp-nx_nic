@@ -1,0 +1,391 @@
+.\" LICENSE
+.\" Copyright (C) 2003 - 2009 NetXen, Inc.
+.\" All rights reserved.
+.\"*
+.\"* This program is free software; you can redistribute it and/or
+.\"* modify it under the terms of the GNU General Public License
+.\"* as published by the Free Software Foundation; either version 2
+.\"* of the License, or (at your option) any later version.
+.\"*
+.\"* This program is distributed in the hope that it will be useful, but
+.\"* WITHOUT ANY WARRANTY; without even the implied warranty of
+.\"* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\"* GNU General Public License for more details.
+.\"*
+.\"* You should have received a copy of the GNU General Public License
+.\"* along with this program; if not, write to the Free Software
+.\"* Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+.\"* MA  02111-1307, USA.
+.\"*
+.\"* The full GNU General Public License is included in this distribution
+.\"* in the file called LICENSE.
+.\"*
+.\"* Contact Information:
+.\"*    info@netxen.com
+.\"* NetXen,
+.\"* 18922 Forge Dr.
+.\"* Cupertino, CA 95014
+.\"*/
+
+.TH nx_nic 4
+
+.SH NAME
+nx_nic \- This file describes the NetXen's NIC driver for the Linux Kernel.
+
+.SH SYNOPSIS
+modprobe nx_nic [OPTIONS]
+.br
+insmod nx_nic.ko [OPTIONS]
+
+.SH DESCRIPTION
+This is the driver for NetXen's Intelligent NIC NX2031 and NX3031 Ethernet cards. The pre-requisites for installing this driver are: 
+.LP
+* Xeon / Athlon / Opteron processor(s)
+.br
+* At least 2GB memory
+.br
+* At least 64MB of free disk space for installation
+.br
+* Either of the following Linux Distributions
+.IP
+* Red Hat Enterprise Linux 5 AS & ES
+.br
+* Red Hat Enterprise Linux 4 AS & ES
+.br
+* SuSE Linux Enterprise 10.0
+.br
+* SuSE Linux Enterprise 9.0
+.br
+* In all these cases, Linux kernel 2.6.5 or later is required.
+.IP
+.br
+.SH INSTALLATION
+Before installation, the previous version must be uninstalled. The
+uninstallation procedure is detailed in the UNINSTALL section below.
+
+.br
+The Linux sources are distributed in RPM format and the rpm is named 
+nx_nic-<version>.src.rpm. 
+.br
+
+Note: The version is defined with the following format - x.y.z-a whereas 
+x.y.z is the driver version number.
+.PP
+.br
+1. Install the source rpm with the following command:
+.br
+
+# rpm -ivh <vendor>-nx_nic-<version>.src.rpm 
+
+.br
+2. Build the binary RPM for the nx_nic driver
+
+.br
+For Redhat:
+.br
+# rpmbuild -bb /usr/src/redhat/SPECS/<vendor>-nx_nic-<version>.spec
+.br
+
+.br
+Note: On 32-bit RHEL, sometimes it is required to specify --target=i686 in rpmbuild stage.
+Otherwise you may see following error:
+.br	
+Failed build dependencies:
+.br
+kernel-devel-i386 = <kernel_ver>is needed by nx_nic-<version>.i386
+.br		
+
+.br		
+For SuSE:
+.br
+# rpmbuild -bb /usr/src/packages/SPECS/<vendor>-nx_nic-<version>.spec
+.br
+
+
+Note: This will create a binary rpm. On a Redhat system, the binary rpm will be in
+/usr/src/redhat/RPMS/<arch>. On a SuSE system, the binary rpm will be in
+/usr/src/packages/RPMS/<arch>. Here, arch may be either i386 or i586 or
+i686 or x86_64, depending on the system.
+.br
+
+3. Install the binary RPM with the following command:
+
+.br
+Note: For vendor hp, hp-nx_nic-tools is needed by kmod-hp-nx_nic
+
+.br
+.br
+For Redhat:
+.br
+# rpm -ivh
+.br
+/usr/src/redhat/RPMS/<arch>/<vendor>-nx_nic-tools-<version>.<arch>.rpm
+.br
+
+# rpm -ivh
+.br
+/usr/src/redhat/RPMS/<arch>/<vendor>-nx_nic-<version>.<arch>.rpm --nodeps
+.br
+
+For SuSE:
+.br
+# rpm -ivh
+.br
+/usr/src/packages/RPMS/<arch>/<vendor>-nx_nic-tools-<version>.<arch>.rpm
+.br
+
+# rpm -ivh
+.br
+/usr/src/packages/RPMS/<arch>/<vendor>-nx_nic-<version>.<arch>.rpm
+.br
+
+ Note:  This will install the driver as a loadable module in
+        /lib/modules/<Kernel Version>/updates/drivers/net/nx_nic.ko
+        For HP, the path is /lib/modules/<Kernel Version>/extra/
+.br
+        hp-nx_nic/drivers/nx_nic.ko
+.br
+.SH LOADING THE DRIVER
+.LP
+The driver can be loaded with the following commands:
+.br
+
+	# modprobe nx_nic [OPTIONS]
+.br
+or
+.br
+ 	# insmod nx_nic.ko [OPTIONS]
+.br
+
+Note:  On SuSE systems, insmod might fail due to an unresolved dependency on 
+the firmware_class module. In this case, modprobe should be used instead.
+.br
+.LP
+.SH FLASHING THE FIRMWARE
+Some software releases require firmware to be updated in the NIC's flash memory.
+See the release notes of your software package in order to identify if this is necessary. If so, use the nxflash tool included in the nx_tools-<version>.rpm   package.
+.br
+.IP
+1. Install the nx_tools binary rpm with the following command:
+.br
+	# rpm -ivh nx_tools-<version>.rpm
+.br
+
+2. Change to the installation directory of nxflash
+.br
+	# If tar <vendor>-nx_tools-<version>.tar.gz is provided,
+.br
+	  untar it.
+.br
+	# cd <vendor>-nx_tools-<version>
+.br
+   else,
+.br
+	# cd /opt/netxen dir.
+.br
+
+3. Update the firmware for the specified interface
+.br
+	# ./nxflash -i <device> --all
+.br
+
+Here, <device> is an integer corresponding to the NetXen card (typically 0).
+In case of multiple NetXen NICs present, a device list can be obtained using
+.br
+	# ./nxflash -l
+.br
+
+After the flash has been updated, the system must be rebooted for
+it to take effect.
+.br
+.IP
+.LP
+
+.SH CARD SETTINGS
+The following settings are the default and optional parameters for the NIC.
+.br
+
+.B Speed:
+.br
+         Autonegotiated to link capability.
+.br
+
+.B Flow Control:
+.br
+         Default: rx: on, tx: on
+.br
+         tx pause frames can be turned off
+.br
+         See the EXAMPLES section below on how to change pause parameters.
+.br
+
+.B MTU:
+.br
+         Default: 1500
+.br
+         Range  : 0-8000 (Chips with revision ID upto 0x25)
+.br
+         Range  : 0-9000 (Chips with revision ID greater than 0x25)
+.br
+         See the EXAMPLES section below on how to set the MTU
+.br
+
+.B TSO:
+.br
+         Default: On
+.br
+         See the EXAMPLES section below on how to change TSO
+.br
+
+The following optional parameters can be passed to the driver with the modprobe command.
+Note:  See the EXAMPLES section below for an illustration on how to set the parameters.
+
+.B tx_desc
+.br
+    Default: 1024
+.br
+    Range  : 256-1024 (must be power of two).
+.br
+    This sets the size of the command descriptor rings (tx).
+.br
+
+.B jumbo_desc_1g
+.br
+    Default: 512
+.br
+    Range  : 64-1024 (must be power of two).
+.br
+    This sets the size of the receive ring for jumbo frames (1GbE ports).
+.br
+
+.B jumbo_desc
+.br
+    Default: 1024 
+.br
+    Range  : 64-1024 (must be power of two).
+.br
+    This sets the size of the receive ring for jumbo frames (10GbE ports).
+.br
+
+.B rdesc_1g
+.br
+    Default: 2048
+.br
+    Range  : 64-32768 (must be power of two).
+.br
+    This sets the size of the receive ring for "normal" packets (1GbE ports).
+    If firmware version is (3.4.xyz) then max is 32768. If firmware version
+    is (4.0.xyz), then max is 8192. 
+.br
+
+.B rdesc_10g
+.br
+    Default: 4096 (for x86_64)
+.br
+    Range  : 64-32768 (must be power of two).
+.br
+    This sets the size of the receive ring for "normal" packets (10GbE ports).
+    If firmware version is (3.4.xyz) then max is 32768. If firmware version
+    is (4.0.xyz), then max is 8192.
+.br
+
+.B use_msi
+.br
+    Default: Enable (1)
+.br
+    Range: Disable (0) or Enable (1)
+.br
+
+.B use_msi_x (available only on kernel versions greater than or equal to 2.6.8)
+.br
+    Default: Enable (1)
+.br
+    Range: Disable (0) or Enable (1)
+.br
+use_msi_x option takes precedence over use_msi option. 
+.br
+
+.B rss_enable (available only if msix is enabled)
+.br
+    Default: Enable (1)
+.br
+    Range: Disable (0) or Enable (1)
+.br
+
+.SH UNINSTALL
+.br
+The following example illustrates how to uninstall the nx_nic rpm
+package.
+
+.br
+1. Bring down the interface with the following command:
+.br
+	# ifconfig eth<x> down
+.br
+
+2. Remove the driver with the following command:
+.br
+	# rmmod nx_nic
+.br
+
+3. Remove the rpm package with the following command:
+.br
+	# rpm -e <vendor>-nx_nic
+.br
+
+.SH EXAMPLES:
+The following example shows loading the NetXen NIC driver:
+.br
+	# modprobe nx_nic
+.br
+
+The following example shows info about the NetXen NIC driver:
+.br
+	# modinfo nx_nic
+.br
+
+The following example shows info about the installed binary rpm:
+.br
+	# rpm -q nx_nic
+.br
+
+The following command illustrates how to set the optional parameters: 
+.br
+	# modprobe nx_nic tx_desc=2048
+.br
+
+The following command illustrates how to set the MTU:
+.br
+	# ifconfig eth<x> mtu 8000
+.br
+
+The following command illustrates how to change the TSO parameter:
+.br
+	# ethtool -K eth<x> tso off
+
+.br
+The following command illustrates how to change the pause parameter:
+.br
+	# ethtool -A eth<x> tx off
+
+.br
+
+.SH CAVEATS
+Newer versions of the Linux kernel will contain NetXen's driver netxen_nic which
+supports the same devices as nx_nic except without the LSA interface.  This driver 
+will have to be manually removed before installing the nx_nic driver. The following 
+command sequence can be used to remove netxen_nic.
+.br
+         # rmmod netxen_nic
+.br
+         # rm /lib/modules/<KernelVersion>/kernel/drivers/net/netxen/netxen_nic.ko
+.br
+
+
+
+.SH SUPPORT
+For additional information about NetXen NIC and its driver, firmware, documentation and related material see 
+.br
+.B http://www.netxen.com
+.SH SEE ALSO
+nxflash(4)

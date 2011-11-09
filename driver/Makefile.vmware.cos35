@@ -1,0 +1,72 @@
+# Copyright (C) 2003 - 2009 NetXen, Inc.
+# All rights reserved.
+# 
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+# MA 02111-1307, USA.
+# 
+# The full GNU General Public License is included in this distribution
+# in the file called LICENSE.
+# 
+# Contact Information:
+# licensing@netxen.com
+# NetXen, Inc.
+# 18922 Forge Drive
+# Cupertino, CA 95014
+#
+# Makefile for UNM ethernet NIC driver as part of the kernel build
+#
+
+UNM_ARCH ?= P3
+ifeq ($(UNM_ARCH),P3)
+P3_MODE ?= P3_LEGACY
+endif
+
+O_TARGET := unm_nic.o
+
+obj-y	:= unm_nic_hw.o unm_nic_main.o unm_nic_init.o unm_nic_ethtool.o nx_nic_vmk.o \
+	   nxhal.o nxhal_v34.o xge_mdio.o niu.o nx_hash_table.o nx_mem_pool.o \
+           unm_nic_procfs.o unm_nic_lro.o unm_nic_tool.o nx_pexq.o
+obj-m	:= $(O_TARGET)
+
+UNMSRC := $(HPATH)/../drivers/net/unm_nic
+ 
+EXTRA_CFLAGS += -I$(UNMSRC)/include -I.
+
+NETXEN_DEFS ?= -D$(UNM_ARCH) -DPEGNET_NIC
+ifeq ($(UNM_ARCH),P3)
+NETXEN_DEFS += -D$(P3_MODE)
+endif
+
+NETXEN_DEFS += -DUNM_X_HARDWARE=UNM_X_ASIC
+NETXEN_DEFS += -DUNM_CONF_PROCESSOR=UNM_CONF_X86 
+NETXEN_DEFS += -DUNM_CONF_OS=UNM_CONF_LINUX
+NETXEN_DEFS += -DUNM_DELAY_HW=0
+NETXEN_DEFS += -DUNM_HAL_NATIVE
+NETXEN_DEFS += -DESX_3X_COS
+
+EXTRA_CFLAGS += $(NETXEN_DEFS) 
+EXTRA_CFLAGS += -DEXPORT_SYMTAB
+EXTRA_CFLAGS += -DOLD_KERNEL -O2
+
+HOST_CPU=$(shell $(TC_UNAME) -p)
+ifeq ($(HOST_CPU),x86_64)
+EXTRA_CFLAGS += -DHOST_CPU_x86_64
+endif
+                                                                                                                        
+ifeq ($(BUILD_PLATFORM),x86_64)
+    EXTRA_CFLAGS += -mcmodel=kernel -mno-red-zone -fno-unit-at-a-time -fno-reorder-blocks
+endif
+
+include $(TOPDIR)/Rules.make

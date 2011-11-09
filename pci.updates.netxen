@@ -1,0 +1,20 @@
+4040  NetXen Incorporated
+	0001  NXB-10GXSR 10 Gigabit Ethernet PCIe Adapter with SR-XFP optical interface
+		103c 7047  NC510F PCIe 10 Gigabit Server Adapter
+	0002  NXB-10GCX4 10 Gigabit Ethernet PCIe Adapter with CX4 copper interface
+		103c 7048  NC510c PCIe 10Gigabit Server Adapter
+	0003  NXB-4GCU Quad Gigabit Ethernet PCIe Adapter with 1000-BASE-T interface
+	0004  BladeCenter-H 10 Gigabit Ethernet High Speed Daughter Card
+	0005  NetXen Dual Port 10GbE Multifunction Adapter for c-Class
+		103c 170e  NC512m Dual Port 10GbE Multifunction BL-C Adapter
+	0024  XG Mgmt
+	0025  XG Mgmt
+	0100  NX3031 Multifunction 1/10 Gigabit Server Adapter
+		103c 171b  NC522m Dual Port 10GbE Multifunction BL-c Adapter
+		103c 3251  HP NC375i 1Gb w/HP NC524 10Gb
+		103c 705a  NC375i Integrated Quad Port Multifunction Gigabit Server Adapter
+		103c 1740  NC375T PCI Express Quad Port Gigabit Server Adapter
+		103c 705b  NC522SFP Dual Port 10GbE Server Adapter
+		4040 0124  NetXen NX3031 Quad Port Gigabit Server Adapter
+		4040 0126  NetXen Dual Port SFP+ 10GbE Server Adapter
+

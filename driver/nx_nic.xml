@@ -1,0 +1,180 @@
+<?xml version='1.0' encoding='iso-8859-1'?>
+<pcitable>
+  <moduleinfo class="00020000" mask="00ffff00">
+    <dependencies></dependencies>
+  </moduleinfo>
+  <vendor id="4040">
+    <short>NX</short>
+    <name>NetXen</name>
+    <device id="0001">
+      <vmware label="nic">
+        <desc></desc>
+        <driver>nx_nic</driver>
+      </vmware>
+      <table file="pcitable.Linux" data="00000000" prefix="*" module="nx_nic">
+        <desc>10G Ethernet PCI Express</desc>
+      </table>
+      <name>10G Ethernet PCI Express</name>
+    </device>
+    <device id="0001:103c:7047">
+      <vmware label="nic">
+        <desc></desc>
+        <driver>nx_nic</driver>
+      </vmware>
+      <table file="pcitable.Linux" data="00000000" prefix="*" module="nx_nic">
+        <desc>HP NC510F PCIe 10 Gigabit Server Adapter</desc>
+      </table>
+      <name>HP NC510F PCIe 10 Gigabit Server Adapter</name>
+    </device>
+    <device id="0002">
+      <vmware label="nic">
+        <desc></desc>
+        <driver>nx_nic</driver>
+      </vmware>
+      <table file="pcitable.Linux" data="00000000" prefix="*" module="nx_nic">
+        <desc>10G Ethernet PCI Express CX</desc>
+      </table>
+      <name>10G Ethernet PCI Express CX</name>
+    </device>
+    <device id="0002:103c:7048">
+      <vmware label="nic">
+        <desc></desc>
+        <driver>nx_nic</driver>
+      </vmware>
+      <table file="pcitable.Linux" data="00000000" prefix="*" module="nx_nic">
+        <desc>HP NC510C PCIe 10 Gigabit Server Adapter</desc>
+      </table>
+      <name>HP NC510C PCIe 10 Gigabit Server Adapter</name>
+    </device>
+    <device id="0004">
+      <vmware label="nic">
+        <desc></desc>
+        <driver>nx_nic</driver>
+      </vmware>
+      <table file="pcitable.Linux" data="00000000" prefix="*" module="nx_nic">
+        <desc>IMEZ 10 Gigabit Ethernet</desc>
+      </table>
+      <name>IMEZ 10 Gigabit Ethernet</name>
+    </device>
+    <device id="0005">
+      <vmware label="nic">
+        <desc></desc>
+        <driver>nx_nic</driver>
+      </vmware>
+      <table file="pcitable.Linux" data="00000000" prefix="*" module="nx_nic">
+        <desc>HMEZ 10 Gigabit Ethernet</desc>
+      </table>
+      <name>HMEZ 10 Gigabit Ethernet</name>
+    </device>
+    <device id="0100">
+      <vmware label="nic">
+        <desc></desc>
+        <driver>nx_nic</driver>
+      </vmware>
+      <table file="pcitable.Linux" data="00000000" prefix="*" module="nx_nic">
+        <desc>1G/10G Ethernet PCI Express</desc>
+      </table>
+      <name>1G/10G Ethernet PCI Express</name>
+    </device>
+    <device id="0100:103c:171b">
+      <vmware label="nic">
+        <desc></desc>
+        <driver>nx_nic</driver>
+      </vmware>
+      <table file="pcitable.Linux" data="00000000" prefix="*" module="nx_nic">
+        <desc>HP NC522m Dual Port 10GbE Multifunction BL-c Adapter</desc>
+      </table>
+      <name>HP NC522m Dual Port 10GbE Multifunction BL-c Adapter</name>
+    </device>
+    <device id="0100:103c:3251">
+      <vmware label="nic">
+        <desc></desc>
+        <driver>nx_nic</driver>
+      </vmware>
+      <table file="pcitable.Linux" data="00000000" prefix="*" module="nx_nic">
+        <desc>HP NC375i 1G w/NC524SFP 10G Module</desc>
+      </table>
+      <name>HP NC375i 1G w/NC524SFP 10G Module</name>
+    </device>
+    <device id="0100:103c:705b">
+      <vmware label="nic">
+        <desc></desc>
+        <driver>nx_nic</driver>
+      </vmware>
+      <table file="pcitable.Linux" data="00000000" prefix="*" module="nx_nic">
+        <desc>HP NC522SFP Dual Port 10GbE Server Adapter</desc>
+      </table>
+      <name>HP NC522SFP Dual Port 10GbE Server Adapter</name>
+    </device>
+    <device id="0100:152d:896b">
+      <vmware label="nic">
+        <desc></desc>
+        <driver>nx_nic</driver>
+      </vmware>
+      <table file="pcitable.Linux" data="00000000" prefix="*" module="nx_nic">
+        <desc>Quanta SFP+ Dual Port 10GbE Adapter</desc>
+      </table>
+      <name>Quanta SFP+ Dual Port 10GbE Adapter</name>
+    </device>
+    <device id="0100:4040:0123">
+      <vmware label="nic">
+        <desc></desc>
+        <driver>nx_nic</driver>
+      </vmware>
+      <table file="pcitable.Linux" data="00000000" prefix="*" module="nx_nic">
+        <desc>Dual Port 10GbE CX4 Adapter</desc>
+      </table>
+      <name>Dual Port 10GbE CX4 Adapter</name>
+    </device>
+    <device id="0100:4040:0124">
+      <vmware label="nic">
+        <desc></desc>
+        <driver>nx_nic</driver>
+      </vmware>
+      <table file="pcitable.Linux" data="00000000" prefix="*" module="nx_nic">
+        <desc>QLE3044 (NX3-4GBT) Quad Port PCIe 2.0 Gigabit Ethernet Adapter</desc>
+      </table>
+      <name>QLE3044 (NX3-4GBT) Quad Port PCIe 2.0 Gigabit Ethernet Adapter</name>
+    </device>
+    <device id="0100:4040:0125">
+      <vmware label="nic">
+        <desc></desc>
+        <driver>nx_nic</driver>
+      </vmware>
+      <table file="pcitable.Linux" data="00000000" prefix="*" module="nx_nic">
+        <desc>NX3-IMEZ 10 Gigabit Ethernet</desc>
+      </table>
+      <name>NX3-IMEZ 10 Gigabit Ethernet</name>
+    </device>
+    <device id="0100:4040:0126">
+      <vmware label="nic">
+        <desc></desc>
+        <driver>nx_nic</driver>
+      </vmware>
+      <table file="pcitable.Linux" data="00000000" prefix="*" module="nx_nic">
+        <desc>QLE3142 (NX3-20GxX) Dual Port PCIe 2.0 10GbE SFP+ Adapter</desc>
+      </table>
+      <name>QLE3142 (NX3-20GxX) Dual Port PCIe 2.0 10GbE SFP+ Adapter</name>
+    </device>
+    <device id="0100:103c:705a">
+      <vmware label="nic">
+        <desc></desc>
+        <driver>nx_nic</driver>
+      </vmware>
+      <table file="pcitable.Linux" data="00000000" prefix="*" module="nx_nic">
+        <desc>HP NC375i Integrated Quad Port Multifunction Gigabit Server Adapter</desc>
+      </table>
+      <name>HP NC375i Integrated Quad Port Multifunction Gigabit Server Adapter</name>
+    </device>
+    <device id="0100:103c:1740">
+      <vmware label="nic">
+        <desc></desc>
+        <driver>nx_nic</driver>
+      </vmware>
+      <table file="pcitable.Linux" data="00000000" prefix="*" module="nx_nic">
+        <desc>Low-cost NetXen-based four-port 1GbE standup NIC for ML/DL ProLiant servers</desc>
+      </table>
+      <name>HP NC375T PCI Express Quad Port Gigabit Server Adapter</name>
+    </device>
+  </vendor>
+</pcitable>

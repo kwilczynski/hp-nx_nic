@@ -1,0 +1,77 @@
+# Copyright (C) 2003 - 2009 NetXen, Inc.
+# All rights reserved.
+# 
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+# MA 02111-1307, USA.
+# 
+# The full GNU General Public License is included in this distribution
+# in the file called LICENSE.
+# 
+# Contact Information:
+# licensing@netxen.com
+# NetXen, Inc.
+# 18922 Forge Drive
+# Cupertino, CA 95014
+ifeq (${UNMSRC},)
+WORKING_DIR=$(shell pwd)
+INCLUDE_DIR=$(WORKING_DIR)/../include
+
+else
+WORKING_DIR=$(UNMSRC)/nx_xport
+INCLUDE_DIR=$(UNMSRC)/include
+endif
+TROUT=/build/toolchain/lin32
+MAKE=${TROUT}/make-3.81/bin/make
+ARCH= i386
+MAKE= ${TROUT}/make-3.81/bin/make  
+LD=${TROUT}/gcc-3.2.3-56/i686-linux/bin/ld
+CC=${TROUT}/gcc-3.2.3-56/bin/i686-linux-gcc
+EXTRA_CFLAGS += -DUNM_CONF_PROCESSOR=UNM_CONF_X86
+EXTRA_CFLAGS += -DUNM_CONF_OS=UNM_CONF_LINUX -DUNM_HAL_NATIVE
+EXTRA_CFLAGS += -DUNM_X_HARDWARE=UNM_X_ASIC
+EXTRA_CFLAGS  += -D__KERNEL__ -DMODULE -I$(KERNEL_INC) -O -Wall
+EXTRA_CFLAGS  += -DEXPORT_SYMTAB
+EXTRA_CFLAGS  += -I. -I$(UNMSRC)/ -I${INCLUDE_DIR}
+INCLUDE  := -isystem ${SOURCE_PATH}/include  -D__KERNEL__
+CFLAGS += $(EXTRA_CFLAGS) -O2 -DMODULE -D__KERNEL__ ${WARN} ${INCLUDE}
+
+NX_XPORT_OBJS = nx_hw.o nx_pci_xport.o nx_xport_tool.o
+
+CSRCS    = $(NX_XPORT_OBJS:%.o=%.c)
+
+NX_XPORT_MODULE = nx_xport.o
+
+MODULES=$(NX_XPORT_MODULE)
+
+.DEFAULT:       all
+
+all: nx_xport.o
+
+nx_xport.o : nx_hw.o  nx_pci_xport.o  nx_xport_tool.o
+	$(LD) -m elf_i386 -r -o nx_xport.o nx_hw.o  nx_pci_xport.o  nx_xport_tool.o
+
+nx_hw.o : nx_hw.c
+	${CC} ${CFLAGS} -c nx_hw.c
+
+nx_pci_xport.o : nx_pci_xport.c
+	${CC} ${CFLAGS} -c nx_pci_xport.c
+
+nx_xport_tool.o : nx_xport_tool.c
+	${CC} ${CFLAGS} -c nx_xport_tool.c
+
+libs: $(MODULES)
+
+bins:   libs $(MODULES)
+

@@ -1,0 +1,161 @@
+.\" LICENSE
+.\" Copyright (C) 2003 - 2009 NetXen, Inc.
+.\" All rights reserved.
+.\"*
+.\"* This program is free software; you can redistribute it and/or
+.\"* modify it under the terms of the GNU General Public License
+.\"* as published by the Free Software Foundation; either version 2
+.\"* of the License, or (at your option) any later version.
+.\"*
+.\"* This program is distributed in the hope that it will be useful, but
+.\"* WITHOUT ANY WARRANTY; without even the implied warranty of
+.\"* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\"* GNU General Public License for more details.
+.\"*
+.\"* You should have received a copy of the GNU General Public License
+.\"* along with this program; if not, write to the Free Software
+.\"* Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+.\"* MA  02111-1307, USA.
+.\"*
+.\"* The full GNU General Public License is included in this distribution
+.\"* in the file called LICENSE.
+.\"*
+.\"* Contact Information:
+.\"*    info@netxen.com
+.\"* NetXen,
+.\"* 18922 Forge Dr.
+.\"* Cupertino, CA 95014
+.\"*/
+
+.TH NXFLASH 4 "2 28 2009" "nxflash" ""
+
+.SH NAME
+\fBnxflash\fR \- NetXen Firmware Update Utility.
+
+.SH SYNOPSIS
+
+Usage: \fBnxflash\fR [option] [operation]
+
+.SH DESCRIPTION
+The \fBnxflash\fR utility is used to update/query the NetXen NIC's flash memory. Some software releases may require flash update in order for optimal performance or latest feature set. Consult the release notes of your software release to determine whether flash update is required.
+
+Firmware upgrade is a very sensitive operation and must be done carefully so as to avoid corrupting the flash contents.
+
+.SH OPTIONS
+.br
+.TP
+\fB-i \fIdevice operation\fB\fR, \fB--interface \fIdevice operation\fB\fR
+Select \fIdevice\fR number (0,1,2,etc) or it could be PCI Bus:Device.Function info (e.g. 10:00.1) for flash \fIoperation\fR.
+ Device number can be obtained with \fB-l\fR option.
+ \fIoperation\fR is defined below (FLASH OPERATIONS).
+
+.TP
+\fB-l, --list\fR
+Show all the NetXen devices installed.
+
+.TP
+\fB-v, --version\fR
+Display the version information
+.TP
+\fB-h, --help\fR
+Display usage
+
+.SH FLASH OPERATIONS
+.br
+The following operations can be performed. Each requires that the device number is set first on the command line with the \fB-i\fR option.
+.TP
+\fB--info\fR
+Show NIC information. This displays information currently stored in the NIC's flash for informational purposes.
+
+.TP
+\fB-a \fI[image file]\fB\fR , \fB--all\fI[image file]\fB\fR
+Update flash using default flash image, or file specified by user.
+.TP
+\fB--pxe-on\fR
+Enable PXE boot (default) on a device.
+.TP
+\fB--pxe-off\fR
+Disable PXE boot on a device.
+.TP
+\fB--wol-on\fR
+Enable Wake on LAN on a device.
+.TP
+\fB--wol-off\fR
+Disable Wake on LAN on a device.
+.TP
+\fB-d \fIfile.xml\fB\fR, \fB-D \fIfile.xml\fB\fR, \fB/d \fIfile.xml\fB\fR, \fB/D \fIfile.xml\fB\fR
+Creates file.xml having NIC/firmware information.Default file name is nicdiscovery.xml.
+.TP
+\fB-u \fIfile.xml\fB\fR, \fB-U \fIfile.xml\fB\fR, \fB/u \fIfile.xml\fB\fR, \fB/U \fIfile.xml\fB\fR
+F/W Upgrade /Downgrade based on the file.xml.Default file taken is nicdiscovery.xml.Should be used after -d option.
+
+
+.SH OPERATIONAL DETAILS
+
+.SH Updating flash
+This will update the NIC's flash with new firmware image. The firmware images are bundled as part of the NetXen tools package for a given software release.
+
+Note: The NetXen NIC will be taken offline while flashing operation is in process.
+
+.SH NIC Information
+This displays flashed product information for the NIC, including MAC address, serial number, and firmware versions.
+
+.br
+The prerequisites for running \fBnxflash\fR are:
+.br
+      * The NetXen Network Interface Card.
+.br
+      * NetXen NIC driver package
+.br
+      * NetXen tools package
+
+.br
+See the nx_nic man page for detailed instructions on installing the driver and tools packages.
+
+.SH EXAMPLES
+Interactive Mode for nxflash:
+.br
+               \fBnxflash\fR
+
+Display all installed NetXen NICs:
+.br
+               \fBnxflash\fR --unattended
+
+Display all installed NetXen NICs:
+.br
+		\fBnxflash\fR -l
+.br
+	or	\fBnxflash\fR --list
+
+Update firmware:
+.br
+		\fBnxflash\fR -i 0 -a
+.br
+	or	\fBnxflash\fR -i 0 --all
+.br
+	or	\fBnxflash\fR -i Bus:Device.Function -a
+.br
+	or	\fBnxflash\fR -i Bus:Device.Function --all
+
+Display NIC information:
+.br
+		\fBnxflash\fR -i 0 --info
+.br
+	or	\fBnxflash\fR -i Bus:Device.Function --info
+
+Display command usage:
+.br
+		\fBnxflash\fR --h
+.br
+	or	\fBnxflash\fR ---help
+
+
+.SH SUPPORT
+For additional information about NetXen NIC and its driver, firmware, documentation and related material see:
+.br
+.LP
+.RS
+.I http://www.netxen.com
+.RE
+.SH SEE ALSO
+nx_nic(4), nxudiag(4)

@@ -1,0 +1,151 @@
+# Copyright (C) 2003 - 2009 NetXen, Inc.
+# All rights reserved.
+# 
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+# MA 02111-1307, USA.
+# 
+# The full GNU General Public License is included in this distribution
+# in the file called LICENSE.
+# 
+# Contact Information:
+# licensing@netxen.com
+# NetXen, Inc.
+# 18922 Forge Drive
+# Cupertino, CA 95014
+CURRENT_DIR = $(PWD)
+
+UNM_ARCH ?= P3
+ifeq ($(UNM_ARCH),P3)
+P3_MODE ?= P3_LEGACY
+endif
+
+MODULE   = unm_nic.o
+CFILES   = unm_nic_hw.c unm_nic_main.c unm_nic_init.c unm_nic_ethtool.c nx_nic_vmk.c nxhal.c nxhal_v34.c xge_mdio.c niu.c linux_module_heap.c \
+	   nx_hash_table.c  nx_mem_pool.c unm_nic_procfs.c unm_nic_lro.c unm_nic_tool.c nx_pexq.c
+
+DBG_OBJS = $(addprefix debug/, $(CFILES:.c=.o))
+REL_OBJS = $(addprefix release/, $(CFILES:.c=.o))
+DRIVERMAPFILE = $(MODULE:%.o=%.xml)
+
+MODULE_HEAP_NAME    =  unm_nic
+MODULE_HEAP_INITIAL = "8*1024*1024"
+MODULE_HEAP_MAX     = "32*1024*1024"
+
+RPM_BASENAME = VMware-esx-drivers-net-unm_nic
+# Get version information from unm_version.h, present in the tarball.
+DRIVER_VERSION := $(shell grep UNM_NIC_LINUX_VERSIONID ./include/unm_version.h | sed "s/[^0-9.]//g")
+BUILD_NUMBER = 00000
+
+include vmwddk.inc
+
+# RPM Spec file
+SPECFILE = driver.spec
+
+#NetXen flags
+NETXEN_DEFS ?= -D$(UNM_ARCH) -DPEGNET_NIC
+ifeq ($(UNM_ARCH),P3)
+NETXEN_DEFS += -D$(P3_MODE)
+endif
+NETXEN_DEFS += -DUNM_CONF_PROCESSOR=UNM_CONF_X86 
+NETXEN_DEFS += -DUNM_CONF_OS=UNM_CONF_LINUX 
+NETXEN_DEFS += -DUNM_X_HARDWARE=UNM_X_ASIC
+NETXEN_DEFS += -DUNM_DELAY_HW=0
+NETXEN_DEFS += -DOLD_KERNEL
+VMWINC += -I./include 
+
+# Vmkdrivers-specific defines
+VMKDRIVER_DEFS  := -DEXPORT_SYMTAB -DGPLED_CODE -DNET_DRIVER -DLINUX_MODULE_HEAP_NAME="\"$(MODULE_HEAP_NAME)\"" -DLINUX_MODULE_HEAP_INITIAL=$(MODULE_HEAP_INITIAL)  -DLINUX_MODULE_HEAP_MAX=$(MODULE_HEAP_MAX) $(NETXEN_DEFS)
+
+# Driver specific defines
+KFLAGS   += -DCONFIG_PROC_FS -DSMP_CAPABLE_VMK_DRIVER -DCONFIG_PCI_MSI
+
+WARNINGS += -Werror
+
+
+all:    build-prep debug release rpm
+
+$(DBG_OBJS): $(CFILES)
+	echo '**   Compiling        $(*F).c '
+	$(VMW_CC) -Wp,-MMD,$*.dd -c -o $@ $(VMW_DBG_FLAGS) $(WARNINGS) $(KFLAGS) $(VMKDRIVER_DEFS) $(VMWINC) $(*F).c
+	[ -s $*.dd -a -s $*.o ] || \
+	(rm -f $*.dd $@; $(FALSE))
+	( $(SED) '1s,[^:]*:,DEPLIST :=,' $*.dd ; \
+	      echo '$@: $$(DEPLIST)' ; \
+	      echo '$$(DEPLIST):' ; \
+	) > $*.d ; \
+	rm -f $*.dd
+
+$(REL_OBJS): $(CFILES)
+	echo '**   Compiling        $(*F).c '
+	$(VMW_CC) -Wp,-MMD,$*.dd -c -o $@ $(VMW_REL_FLAGS) $(WARNINGS) $(KFLAGS) $(VMKDRIVER_DEFS) $(VMWINC) $(*F).c
+	[ -s $*.dd -a -s $*.o ] || \
+	(rm -f $*.dd $@; $(FALSE))
+	( $(SED) '1s,[^:]*:,DEPLIST :=,' $*.dd ; \
+	      echo '$@: $$(DEPLIST)' ; \
+	      echo '$$(DEPLIST):' ; \
+	) > $*.d ; \
+	rm -f $*.dd
+
+build-prep:
+	echo "Preparing build for module: $(MODULE)"
+	$(MKDIR) -p $(CURRENT_DIR)/debug
+	$(MKDIR) -p $(CURRENT_DIR)/release
+
+debug:  $(DBG_OBJS)
+	echo "Building debug driver in $(CURRENT_DIR)/debug"
+	$(RM) -f $(CURRENT_DIR)/debug/$(MODULE)-ofiles-obj.a
+	$(AR) rcs  $(CURRENT_DIR)/debug/$(MODULE)-ofiles-obj.a $(DBG_OBJS)
+	$(LD) $(DIRECT_LD_OPTS) -r -o $(CURRENT_DIR)/debug/$(MODULE) \
+		--whole-archive $(CURRENT_DIR)/debug/$(MODULE)-ofiles-obj.a
+
+release:        $(REL_OBJS)
+	echo "Building release driver in $(CURRENT_DIR)/release"
+	$(RM) -f $(CURRENT_DIR)/release/$(MODULE)-ofiles-rel.a
+	$(AR) rcs  $(CURRENT_DIR)/release/$(MODULE)-ofiles-rel.a $(REL_OBJS)
+	$(LD) $(DIRECT_LD_OPTS) -r -o $(CURRENT_DIR)/release/$(MODULE) \
+		--whole-archive $(CURRENT_DIR)/release/$(MODULE)-ofiles-rel.a
+
+rpm:
+	$(RM) -rf rpm
+	echo "Building driver rpm"
+	$(MKDIR)  -p rpm/SOURCES
+	$(MKDIR)  -p rpm/BUILD
+	$(MKDIR)  -p rpm/SPECS
+	$(MKDIR)  -p rpm/RPMS/i386
+	$(MKDIR)  -p rpm/usr/lib/vmware/vmkmod
+	$(MKDIR)  -p rpm/usr/lib/vmware-debug/vmkmod
+	$(MKDIR)  -p rpm/etc/vmware/pciid
+	$(CP) release/$(MODULE) rpm/usr/lib/vmware/vmkmod
+	$(CP) debug/$(MODULE) rpm/usr/lib/vmware-debug/vmkmod
+	$(CP) $(DRIVERMAPFILE) rpm/etc/vmware/pciid
+	$(SED) -e 's,@@RPMBUILDNUMBER@@,$(BUILD_NUMBER),g' \
+	       -e 's,@@DRIVERVERSION@@,$(DRIVER_VERSION),g' \
+	       -e 's,@@RPMBASENAME@@,$(RPM_BASENAME),g' \
+	       -e 's,@@CURRENTDIR@@,$(CURRENT_DIR),g' \
+	       $(SPECFILE) > rpm/SPECS/$(SPECFILE)
+	$(RPMBUILD) -bb $(CURRENT_DIR)/rpm/SPECS/$(SPECFILE) \
+		--define '_topdir $(CURRENT_DIR)/rpm' \
+		--target=i386-linux
+
+code-check:
+	@make clean > /dev/null 2>&1
+	@make build-prep debug VMW_CC=dcc AR='echo' LD='echo' SED='echo' FALSE='true'  > /dev/null
+
+clean:
+	$(RM) -rf *.o
+	$(RM) -rf *.d
+	$(RM) -rf release
+	$(RM) -rf debug
+	$(RM) -rf rpm

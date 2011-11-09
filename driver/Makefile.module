@@ -1,0 +1,127 @@
+# Copyright (C) 2003 - 2009 NetXen, Inc.
+# All rights reserved.
+# 
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+# MA 02111-1307, USA.
+# 
+# The full GNU General Public License is included in this distribution
+# in the file called LICENSE.
+# 
+# Contact Information:
+# licensing@netxen.com
+# NetXen, Inc.
+# 18922 Forge Drive
+# Cupertino, CA 95014
+#
+# Makefile for the UNM HAL/XPORT kernel modules
+#
+# Kludge around the fact that GNU make seems to append whitespaces
+# after the end of the output of the "shell" command...
+KERNEL_VER=$(strip $(shell uname -r))
+GENKSYMS_KERNEL_VER=$(word 1,$(subst -, ,$(KERNEL_VER)))
+KERNEL_SMP=$(strip $(shell uname -r | grep smp))
+GENKSYMS=/sbin/genksyms
+
+BUILD_PLATFORM=$(shell uname -p)
+
+include	$(UNMSRC)/Makefile.rules
+
+#KERNEL_BASE=/lib/modules/$(KERNEL_VER)/build
+KERNEL_BASE=/home/vijo/local/kern/
+KERNEL_INC=$(KERNEL_BASE)/include
+CONFIG=$(KERNEL_BASE)/.config
+
+LS_CONFIG= $(strip $(shell ls $(CONFIG) 2>/dev/null))
+ifneq ($(LS_CONFIG),)
+  ## .config exists, use it
+  include $(CONFIG)
+else
+  ## no .config. Assume a well-behaved kernel
+  CONFIG_MODULES=y
+  CONFIG_MODVERSIONS=y
+  ifneq ($(KERNEL_SMP),)
+    CONFIG_SMP=y
+  endif
+endif
+
+CFLAGS  += -D__KERNEL__ -DMODULE -I$(KERNEL_INC) -O -Wall
+CFLAGS	+= -DUNM_CONF_PROCESSOR=UNM_CONF_X86 -DEXPORT_SYMTAB
+CFLAGS	+= -DUNM_CONF_OS=UNM_CONF_LINUX -D__KERNEL__
+ifeq ($(HARDWARE),asic)
+CFLAGS  += -DUNM_CONF_PLATFORM=UNM_CONF_RTL
+else
+CFLAGS  += -DUNM_CONF_PLATFORM=UNM_CONF_FPGA
+endif
+CFLAGS	+= -I$(UNMSRC)/include -I$(UNMSRC)/onchip/include -I.
+CFLAGS  += -I/home/vijo/local/kern/include/ #FIXME
+CFLAGS  += -I$(UNMSRC)/onchip/nic #FIXME
+CFLAGS  += -I$(UNMSRC)/onchip/hal/Linux/
+CFLAGS	+= -DUNM_DELAY_HW=0
+CFLAGS  += -g
+CFLAGS  += -O0
+
+ifeq ($(BUILD_PLATFORM),x86_64)
+    CFLAGS += -mcmodel=kernel -mno-red-zone -fno-unit-at-a-time -fno-reorder-blocks
+endif
+
+NIC_OBJS = unm_nic_hw.o unm_nic_main.o
+PCI_OBJS = pci.o
+
+PCI_SRCS = $(UNMSRC)/onchip/hal/Linux/pci.c
+CSRCS	 = $(NIC_OBJS:%.o=%.c) $(PCI_SRCS)
+
+NIC_MODULE = unm_nic.o
+
+MODULES=$(NIC_MODULE)
+
+ifdef CONFIG_SMP
+GENKSYMS += -p smp_
+endif
+
+ifndef CONFIG_MODULES
+$(error Kernel must be configured for module support)
+endif
+
+.DEFAULT:	all
+
+all: depend libs bins
+
+libs: $(MODULES)
+
+bins:	libs $(MODULES)
+
+$(NIC_MODULE): $(NIC_OBJS) export.ver
+	$(LD) -r $(NIC_OBJS) -o $@
+
+export.ver: unm_nic_hw.c unm_nic_main.c
+	$(CC) $(CFLAGS) -E -D__GENKSYMS__ unm_nic_hw.c |\
+	$(GENKSYMS) -k $(GENKSYMS_KERNEL_VER) > $@
+	$(CC) $(CFLAGS) -E -D__GENKSYMS__ unm_nic_main.c |\
+	$(GENKSYMS) -k $(GENKSYMS_KERNEL_VER) >> $@
+
+clean:
+	rm -f *.o export.ver
+
+clobber:	clean
+	$(RM) $(TARGET) $(SIMTARG) $(DIRT) .dependencies
+
+ifdef CONFIG_MODVERSIONS
+depend:		$(CSRCS) $(SIMSRCS) #export.ver
+else
+depend:		$(CSRCS) $(SIMSRCS)
+endif
+	@-$(RM) -f .dependencies
+	$(MAKEDEPEND) -f- -- $(CFLAGS) -- $(CSRCS) $(SIMSRCS) > .dependencies
+-include .dependencies

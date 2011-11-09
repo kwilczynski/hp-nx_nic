@@ -1,0 +1,235 @@
+# Copyright (C) 2003 - 2009 NetXen, Inc.
+# All rights reserved.
+# 
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+# MA 02111-1307, USA.
+# 
+# The full GNU General Public License is included in this distribution
+# in the file called LICENSE.
+# 
+# Contact Information:
+# licensing@netxen.com
+# NetXen, Inc.
+# 18922 Forge Drive
+# Cupertino, CA 95014
+#
+# Makefile.rules for the UNM NIC Driver
+#
+# $Id: Makefile.rules,v 1.2 2009/03/18 17:38:11 abhijeet Exp $
+
+# Kludge around the fact that GNU make seems to append whitespaces
+# after the end of the output of the "shell" command...
+KERNEL_VER=$(strip $(shell uname -r))
+GENKSYMS_KERNEL_VER=$(word 1,$(subst -, ,$(KERNEL_VER)))
+KERNEL_SMP=$(strip $(shell uname -r | grep smp))
+GENKSYMS=/sbin/genksyms
+
+BUILD_PLATFORM=$(shell uname -p)
+
+#FIXME
+ifndef KERNEL_BASE
+KERNEL_BASE=/lib/modules/$(KERNEL_VER)/build
+endif
+#KERNEL_BASE=/home/vijo/local/kern/
+KERNEL_INC=$(KERNEL_BASE)/include
+CONFIG=$(KERNEL_BASE)/.config
+
+LS_CONFIG= $(strip $(shell ls $(CONFIG) 2>/dev/null))
+ifneq ($(LS_CONFIG),)
+  ## .config exists, use it
+  include $(CONFIG)
+else
+  ## no .config. Assume a well-behaved kernel
+  CONFIG_MODULES=y
+  CONFIG_MODVERSIONS=y
+  ifneq ($(KERNEL_SMP),)
+    CONFIG_SMP=y
+  endif
+endif
+
+ifdef CONFIG_SMP
+GENKSYMS += -p smp_
+endif
+
+CFLAGS  += -D__KERNEL__ -DMODULE -I$(KERNEL_INC) -O -Wall
+CFLAGS  += -DUNM_CONF_PROCESSOR=UNM_CONF_X86 -DEXPORT_SYMTAB
+CFLAGS  += -DUNM_CONF_OS=UNM_CONF_LINUX -D__KERNEL__
+CFLAGS  += -I$(UNMSRC)/include -I$(UNMSRC)/onchip/include -I. -I../include/
+CFLAGS  += -I$(KERNEL_INC)
+CFLAGS  += -I$(UNMSRC)/onchip/nic -I$(UNMSRC)/include/
+CFLAGS  += -I$(UNMSRC)/onchip/hal/arch/Linux/ -I$(UNMSRC)/onchip/include/hal
+CFLAGS  += -DUNM_DELAY_HW=0
+CFLAGS  += -g
+CFLAGS  += -O0
+#NIC Driver specific CFLAGS
+#FIXME
+CFLAGS  += -DOLD_KERNEL
+
+#HOST_CPU=$(shell uname -m)
+#ifeq ($(HOST_CPU),x86_64)
+#EXTRA_CFLAGS += -DHOST_CPU_x86_64
+#endif
+#ifeq ($(HOST_CPU),athlon)
+#EXTRA_CFLAGS += -DHOST_CPU_x86_64
+#endif
+
+ifeq ($(BUILD_PLATFORM),x86_64)
+    CFLAGS += -mno-red-zone -fno-unit-at-a-time -fno-reorder-blocks
+endif
+ifeq ($(BUILD_PLATFORM),athlon)
+    gcc_ver=$(subst ., ,$(word 3, $(shell gcc --version 2>/dev/null| grep GCC)))
+    copt=$(shell set -- $(gcc_ver) 0 0 0 0 ; \
+		[ $$2 -ge 4 ] && echo "-fno-unit-at-a-time" ] )
+    CFLAGS += -mno-red-zone $(copt) -fno-reorder-blocks
+endif
+
+#
+# Pick up any local config/build options for this user.
+#
+#include    $(DEPTH)/config.options
+
+BUILDOPTIONS    =
+
+ifeq ($(strip $(NODEBUG)),)
+#    ifeq ($(GLOBAL_DEBUG),1)
+        BUILDOPTIONS += -DDEBUG=1
+#       PEGNET_CFLAG += -g
+#    else
+#	BUILDOPTIONS += -DNDEBUG=1
+#    endif
+
+
+    ifeq ($(KGDB),1)
+        PEGNET_CFLAG += -O0 -DKGDB -fno-inline
+    endif
+else
+   BUILDOPTIONS += -DNDEBUG=1	
+   
+endif
+
+ifneq ($(ENABLE_ASSERTS),1)
+    BUILDOPTIONS += -DNDEBUG
+    BUILDOPTIONS += -DNO_DEBUG_ASSERTS
+endif
+
+PEGNET_CFLAG += -DFASTRETRANS_DEBUG=$(PEGNET_FASTRETRANS_DEBUG)
+
+HARDWARE=asic
+TARGET=native
+HAL=native
+
+BUILDOPTIONS += -DUNM_CONF_PLATFORM=UNM_CONF_RTL
+BUILDOPTIONS += -DPLATFORM_DUT 
+#
+# Set up any local build options for this user.
+#
+BUILDOPTIONS += -DUNM_CONF_PLATFORM=UNM_CONF_RTL
+BUILDOPTIONS += -DCENTAUR=UNM_CONF_FALSE
+#
+# Recurse into a subdirectory in a pretty way.
+#
+SUBDIRLOOP=                                \
+    @+ $(MOREENVIRON) for dir in $(SUBDIRS) ; do            \
+        echo "cd $(UPDIR)$$dir; $(MAKE) $@ ";            \
+        if [ -d $$dir ]; then                    \
+            cd $$dir; $(MAKE) UPDIR=$(UPDIR)$$dir/ $(MOREMAKEARGS) $@ || exit 1; cd ..; \
+        else                            \
+            echo "No such directory";            \
+        fi                            \
+    done
+
+#
+# Define the compilation environment.
+#
+# If you are cross-compiling for Pegasus, set up your target like this:
+#    $(TARGET): CC = $(PEGCC)
+#    $(TARGET): $(OBJS)
+#
+# If you are cross-compiling for Casper, set up your target like this:
+#    $(TARGET): CC = $(CASPERCC)
+#    $(TARGET): $(OBJS)
+#
+# If you are compiling for x86, use the default $(CC) or set up your
+# target like this:
+#    $(TARGET): CC = $(X86CC)
+#    $(TARGET): $(OBJS)
+#
+# You can put both of these in the same Makefile if you need to compile
+# some C files for one architectures and others for the other.
+# All prerequisite builds (ones that happen as a result of these lines)
+# will use the compiler you specify like shown above.
+#
+PEGASUS_HOME = $(TOOLS_HOME)/pegasus
+CASPER_HOME  = $(TOOLS_HOME)/casper
+PEGASUS_BIN  = $(PEGASUS_HOME)/bin
+CASPER_BIN   = $(CASPER_HOME)/bin
+PEGASUS_INC  = $(PEGASUS_HOME)/include
+CASPER_INC   = $(CASPER_HOME)/include
+
+CC           = /usr/bin/gcc
+PEGAR        = $(PEGASUS_BIN)/pegar
+# PEGCC        = $(PEGASUS_BIN)/pegcc -mtracestackdepth
+PEGCC        = $(PEGASUS_BIN)/pegcc
+PEGAS        = $(PEGASUS_BIN)/pegas
+PEGLD        = $(PEGASUS_BIN)/pegld
+PEGRANLIB    = $(shell if [ -f $(PEGASUS_BIN)/pegranlib ]; then \
+                     echo $(PEGASUS_BIN)/pegranlib ; \
+                     else echo /usr/bin/ranlib; \
+                     fi )
+CASPERCC     = $(CASPER_BIN)/cacc -D__Casper__
+CASPERAS     = $(CASPER_BIN)/as
+CASPERLD     = $(CASPER_BIN)/ld
+CASPERAR     = $(CASPER_BIN)/ar
+
+X86CC        = /usr/bin/gcc
+CFLAGS      += $(BUILDOPTIONS)
+LDFLAGS     += $(BUILDOPTIONS)
+
+#
+# The old compiler (3.2.2.1.xxx) does not support the -fhw-bug2 flag. So,
+# test the compiler and see whether we have an old compiler or new
+# compiler.
+#
+vers    := $(subst ., ,$(word 3, $(shell $(PEGCC) --version 2>/dev/null | grep GCC)))
+
+CFLAGS_HWFIX    = -fhw-bug1=2
+ASFLAGS_CFILES  = $(shell set -- $(vers) 0 0 0 0; \
+        [ $$2 -ge 2 -a $$3 -ge 2 -a $$4 -ge 2 ] && echo "-hw-bug2")
+ASFLAGS_CFILES_CC = $(patsubst -%,-f%,$(ASFLAGS_CFILES))
+CFLAGS_HWFIX    += $(ASFLAGS_CFILES_CC)
+
+#
+# Use the following flags when compiling hand coded PEG assembly files.
+# If you use $(PEGAS) to compile the assembly files, use AS_FLAGS_HW.
+# If you use $(PEGCC) -c to compile them, then use AS_FLAGS_HW_CC.
+#
+ASFLAGS_ASFILES     = $(shell set -- $(vers) 0 0 0 0; \
+        [ $$2 -ge 2 -a $$3 -ge 2 -a $$4 -ge 2 ] && echo "-no-hw-bug2")
+ASFLAGS_ASFILES_CC    = $(patsubst -%,-f%,$(ASFLAGS_ASFILES))
+
+#
+# Define various tools for the makefiles to use.
+#
+CP          = /bin/cp -f
+RM          = /bin/rm -f
+LN          = /bin/ln -f
+MV          = /bin/mv -f
+MKDIR       = /bin/mkdir
+AR          = /usr/bin/ar rv
+TAR         = /bin/tar
+MAKEDEPEND  = makedepend
+BISON       = /usr/bin/bison
+FLEX        = /usr/bin/flex
+TOUCH       = /bin/touch
