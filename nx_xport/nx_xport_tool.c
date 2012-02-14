@@ -61,6 +61,7 @@
 #include <asm/types.h>
 #include <asm/uaccess.h>
 #include <linux/kernel.h>
+#include <linux/smp_lock.h>
 
 #include "nx_xport.h"
 #include "nic_phan_reg.h"
@@ -256,14 +257,16 @@ error_out:
  * nx_xport_ioctl ()    We provide the tcl/phanmon support through these
  * ioctls.
  */
-int nx_xport_ioctl(struct inode *inode, struct file *file,
-              unsigned int cmd, unsigned long u_data)
+long nx_xport_ioctl(struct file *file, unsigned int cmd, unsigned long u_data)
 {
 	int err = 0;
 
 //        printk("doing ioctl\n");
 
+	lock_kernel();
+
 	if (!capable(CAP_NET_ADMIN))
+		unlock_kernel();
 		return -EPERM;
 
         switch (cmd) {
@@ -276,5 +279,6 @@ int nx_xport_ioctl(struct inode *inode, struct file *file,
 		break;
 	}
 
+	unlock_kernel();
 	return err;
 }

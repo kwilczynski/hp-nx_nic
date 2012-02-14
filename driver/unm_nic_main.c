@@ -5063,7 +5063,7 @@ static void nx_nic_p3_set_multi(struct net_device *netdev)
 {
 	struct unm_adapter_s *adapter = netdev_priv(netdev);
 	mac_list_t *cur, *next, *del_list, *add_list = NULL;
-	struct dev_mc_list *mc_ptr;
+	struct netdev_hw_addr *ha;
 	__u8 bcast_addr[ETH_ALEN] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 	__uint32_t mode = VPORT_MISS_MODE_DROP;
 
@@ -5087,15 +5087,15 @@ static void nx_nic_p3_set_multi(struct net_device *netdev)
 	}
 
 	if ((netdev->flags & IFF_ALLMULTI) ||
-	    netdev->mc_count > adapter->max_mc_count) {
+	    netdev_mc_count(netdev) > adapter->max_mc_count) {
 		mode = VPORT_MISS_MODE_ACCEPT_MULTI;
 		goto send_fw_cmd;
 	}
 
-	if (netdev->mc_count > 0) {
-		for (mc_ptr = netdev->mc_list; mc_ptr; mc_ptr = mc_ptr->next) {
+	if (netdev_mc_count(netdev) > 0) {
+		netdev_for_each_mc_addr(ha, netdev) {
 
-			nx_nic_p3_add_mac(adapter, mc_ptr->dmi_addr,
+			nx_nic_p3_add_mac(adapter, ha->addr,
 					  &add_list, &del_list);
 		}
 	}
@@ -5125,12 +5125,12 @@ static void nx_nic_p3_set_multi(struct net_device *netdev)
 static void nx_nic_p2_set_multi(struct net_device *netdev)
 {
 	struct unm_adapter_s *adapter = netdev_priv(netdev);
-	struct dev_mc_list *mc_ptr;
+	struct netdev_hw_addr *ha;
 	__u8 null_addr[6] = { 0, 0, 0, 0, 0, 0 };
 	int index = 0;
 
 	if (netdev->flags & IFF_PROMISC ||
-	    netdev->mc_count > adapter->max_mc_count) {
+	    netdev_mc_count(netdev) > adapter->max_mc_count) {
 
 		unm_nic_set_promisc_mode(adapter);
 
@@ -5140,7 +5140,7 @@ static void nx_nic_p2_set_multi(struct net_device *netdev)
 		return;
 	}
 
-	if (netdev->mc_count == 0) {
+	if (netdev_mc_count(netdev) == 0) {
 		unm_nic_unset_promisc_mode(adapter);
 		unm_nic_disable_mcast_filter(adapter);
 		return;
@@ -5149,10 +5149,10 @@ static void nx_nic_p2_set_multi(struct net_device *netdev)
 	unm_nic_set_promisc_mode(adapter);
 	unm_nic_enable_mcast_filter(adapter);
 
-	for (mc_ptr = netdev->mc_list; mc_ptr; mc_ptr = mc_ptr->next, index++)
-		unm_nic_set_mcast_addr(adapter, index, mc_ptr->dmi_addr);
+	netdev_for_each_mc_addr(ha, netdev)
+		unm_nic_set_mcast_addr(adapter, index, ha->addr);
 
-	if (index != netdev->mc_count) {
+	if (index != netdev_mc_count(netdev)) {
 		nx_nic_print4(adapter, "Multicast address count mismatch\n");
 	}
 

@@ -376,8 +376,7 @@ unm_nic_read_w0(unm_adapter * adapter, uint32_t index, uint32_t * value)
 	adapter->unm_nic_hw_read_wx(adapter, index, value, 4);
 }
 
-int nx_xport_ioctl(struct inode *inode, struct file *file,
-              unsigned int cmd, unsigned long u_data);
+long nx_xport_ioctl(struct file *file, unsigned int cmd, unsigned long u_data);
 
 
 /* Functions available from unm_nic_hw.c */

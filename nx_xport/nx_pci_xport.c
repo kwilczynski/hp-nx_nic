@@ -185,7 +185,7 @@ static struct file_operations unm_pci_fops = {
 	llseek: 	NULL,
 	owner:          THIS_MODULE,
 	open:           nx_pci_open,
-	ioctl:		nx_xport_ioctl,
+	unlocked_ioctl: nx_xport_ioctl,
 	release:	nx_pci_release,
 };
 

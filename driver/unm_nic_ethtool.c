@@ -1212,9 +1212,18 @@ static int unm_nic_intr_test(struct net_device *netdev)
 }
 #endif
 
-static int unm_nic_diag_test_count(struct net_device *netdev)
+static int unm_nic_get_sset_count(struct net_device *netdev,
+	int string_set)
 {
 	return UNM_NIC_TEST_LEN;
+	switch(string_set) {
+	case ETH_SS_TEST:
+		return UNM_NIC_TEST_LEN;
+	case ETH_SS_STATS:
+		return UNM_NIC_STATS_LEN;
+	default:
+		return -EOPNOTSUPP;
+	}
 }
 
 static void
@@ -1290,11 +1299,6 @@ unm_nic_get_strings(struct net_device *netdev, uint32_t stringset,
 		}
 		break;
 	}
-}
-
-static int unm_nic_get_stats_count(struct net_device *netdev)
-{
-	return UNM_NIC_STATS_LEN;
 }
 
 /*
@@ -1559,10 +1563,9 @@ static struct ethtool_ops unm_nic_ethtool_ops = {
 	.set_tso                = unm_nic_set_tso,
 #endif
 #endif
-	.self_test_count	= unm_nic_diag_test_count,
 	.self_test		= unm_nic_diag_test,
 	.get_strings		= unm_nic_get_strings,
-	.get_stats_count	= unm_nic_get_stats_count,
+	.get_sset_count		= unm_nic_get_sset_count,
 	.get_ethtool_stats	= unm_nic_get_ethtool_stats,
 	.get_coalesce		= nx_ethtool_get_intr_coalesce,
 	.set_coalesce		= nx_ethtool_set_intr_coalesce,
